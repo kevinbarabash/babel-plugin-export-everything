@@ -1,9 +1,9 @@
-import * as FooBar from "./foobar.js";
-import * as Foo from "./foo.js";
+import * as FooBar from "../foobar.js";
+import * as Foo from "../foo.js";
 // TODO: allow import to be used when mocking default values
-const DefaultFunction = require("./default-function.js");
-const DefaultVariable = require("./default-variable.js");
-import * as UseDefault from "./use-default.js";
+const DefaultFunction = require("../default-function.js");
+const DefaultVariable = require("../default-variable.js");
+import * as UseDefault from "../use-default.js";
 
 const mockValue = (obj, prop, value) => {
     jest.spyOn(obj, prop, "get").mockReturnValue(value);
