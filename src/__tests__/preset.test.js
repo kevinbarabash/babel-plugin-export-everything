@@ -1,12 +1,12 @@
-import { transform } from "@babel/core";
+import {transform} from "@babel/core";
 import fs from "fs";
 
 describe("index", () => {
-  test("foo.js", () => {
-    const input = fs.readFileSync("./example/foo.js");
-    const output = transform(input).code;
+    test("foo.js", () => {
+        const input = fs.readFileSync("./example/foo.js");
+        const output = transform(input).code;
 
-    expect(output).toMatchInlineSnapshot(`
+        expect(output).toMatchInlineSnapshot(`
       "\\"use strict\\";
 
       Object.defineProperty(exports, \\"__esModule\\", {
@@ -26,13 +26,13 @@ describe("index", () => {
         value: true
       });"
     `);
-  });
+    });
 
-  test("foobar.js", () => {
-    const input = fs.readFileSync("./example/foobar.js");
-    const output = transform(input).code;
+    test("foobar.js", () => {
+        const input = fs.readFileSync("./example/foobar.js");
+        const output = transform(input).code;
 
-    expect(output).toMatchInlineSnapshot(`
+        expect(output).toMatchInlineSnapshot(`
       "\\"use strict\\";
 
       Object.defineProperty(exports, \\"__esModule\\", {
@@ -59,13 +59,13 @@ describe("index", () => {
         value: true
       });"
     `);
-  });
+    });
 
-  test("default-function.js", () => {
-    const input = fs.readFileSync("./example/default-function.js");
-    const output = transform(input).code;
+    test("default-function.js", () => {
+        const input = fs.readFileSync("./example/default-function.js");
+        const output = transform(input).code;
 
-    expect(output).toMatchInlineSnapshot(`
+        expect(output).toMatchInlineSnapshot(`
       "\\"use strict\\";
 
       Object.defineProperty(exports, \\"__esModule\\", {
@@ -83,13 +83,13 @@ describe("index", () => {
         value: true
       });"
     `);
-  });
+    });
 
-  test("default-variable.js", () => {
-    const input = fs.readFileSync("./example/default-variable.js");
-    const output = transform(input).code;
+    test("default-variable.js", () => {
+        const input = fs.readFileSync("./example/default-variable.js");
+        const output = transform(input).code;
 
-    expect(output).toMatchInlineSnapshot(`
+        expect(output).toMatchInlineSnapshot(`
       "\\"use strict\\";
 
       exports.getString = () => \\"default\\"; // eslint-disable-next-line no-unused-vars
@@ -102,13 +102,13 @@ describe("index", () => {
         value: true
       });"
     `);
-  });
+    });
 
-  test("use-default.js", () => {
-    const input = fs.readFileSync("./example/use-default.js");
-    const output = transform(input).code;
+    test("use-default.js", () => {
+        const input = fs.readFileSync("./example/use-default.js");
+        const output = transform(input).code;
 
-    expect(output).toMatchInlineSnapshot(`
+        expect(output).toMatchInlineSnapshot(`
       "\\"use strict\\";
 
       Object.defineProperty(exports, \\"__esModule\\", {
@@ -127,5 +127,5 @@ describe("index", () => {
         value: true
       });"
     `);
-  });
+    });
 });
