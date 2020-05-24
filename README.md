@@ -101,7 +101,7 @@ In order have consistent operation regardless of whether the helper is
 being used or not, we need to set `__esModule = true` so that we always
 returns whatever is returned by calls to `require`.
 
-## Limitations:
+## Current Limitations:
 
 - In order to mock default exports you have to use `require` to import
   the module you want to mock in your tests.
