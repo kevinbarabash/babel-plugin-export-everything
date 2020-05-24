@@ -9,17 +9,17 @@ from any source module even if it hasn't been exported.
 
 foo.js
 ```js
-const fooMsg = "foo";
+const msg = "foo";
 
-export const foo = () => fooMsg;
+export const foo = () => msg;
 ```
 
 foobar.js
 ```js
 import {foo} from "./foo.js";
 
-const barMsg = "bar";
-const bar = () => barMsg;
+const msg = "bar";
+const bar = () => msg;
 
 export const foobar = () => {
     return foo() + bar();
@@ -28,8 +28,12 @@ export const foobar = () => {
 
 example.test.js
 ```js
+const mockValue = (obj, prop, value) => {
+    jest.spyOn(obj, prop, "get").mockReturnValue(value);
+};
+
 test("mocking private variable", () => {
-    mockValue(FooBar, "barMsg", "baz");
+    mockValue(FooBar, "msg", "baz");
 
     expect(FooBar.foobar()).toEqual("foobaz");
 });
@@ -41,7 +45,7 @@ test("mocking private function", () => {
 });
 
 test("mocking private variable in dependency", () => {
-    mockValue(Foo, "fooMsg", "qux");
+    mockValue(Foo, "msg", "qux");
 
     expect(FooBar.foobar()).toEqual("quxbar");
 });

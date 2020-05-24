@@ -1,3 +1,3 @@
-const fooMsg = "foo";
+const msg = "foo";
 
-export const foo = () => fooMsg;
+export const foo = () => msg;

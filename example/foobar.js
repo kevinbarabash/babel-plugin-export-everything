@@ -1,7 +1,7 @@
 import {foo} from "./foo.js";
 
-const barMsg = "bar";
-const bar = () => barMsg;
+const msg = "bar";
+const bar = () => msg;
 
 export const foobar = () => {
     return foo() + bar();

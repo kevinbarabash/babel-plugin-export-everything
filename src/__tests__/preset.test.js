@@ -7,25 +7,25 @@ describe("index", () => {
         const output = transform(input).code;
 
         expect(output).toMatchInlineSnapshot(`
-      "\\"use strict\\";
+            "\\"use strict\\";
 
-      Object.defineProperty(exports, \\"__esModule\\", {
-        value: true
-      });
-      exports.foo = void 0;
-      Object.defineProperty(exports, \\"fooMsg\\", {
-        enumerable: true,
-        configurable: true,
-        get: () => \\"foo\\"
-      });
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });
+            exports.foo = void 0;
+            Object.defineProperty(exports, \\"msg\\", {
+              enumerable: true,
+              configurable: true,
+              get: () => \\"foo\\"
+            });
 
-      const foo = () => exports.fooMsg;
+            const foo = () => exports.msg;
 
-      exports.foo = foo;
-      Object.defineProperty(exports, \\"__esModule\\", {
-        value: true
-      });"
-    `);
+            exports.foo = foo;
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });"
+        `);
     });
 
     test("foobar.js", () => {
@@ -33,32 +33,32 @@ describe("index", () => {
         const output = transform(input).code;
 
         expect(output).toMatchInlineSnapshot(`
-      "\\"use strict\\";
+            "\\"use strict\\";
 
-      Object.defineProperty(exports, \\"__esModule\\", {
-        value: true
-      });
-      exports.foobar = void 0;
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });
+            exports.foobar = void 0;
 
-      var _foo = require(\\"./foo.js\\");
+            var _foo = require(\\"./foo.js\\");
 
-      Object.defineProperty(exports, \\"barMsg\\", {
-        enumerable: true,
-        configurable: true,
-        get: () => \\"bar\\"
-      });
+            Object.defineProperty(exports, \\"msg\\", {
+              enumerable: true,
+              configurable: true,
+              get: () => \\"bar\\"
+            });
 
-      exports.bar = () => exports.barMsg;
+            exports.bar = () => exports.msg;
 
-      const foobar = () => {
-        return (0, _foo.foo)() + exports.bar();
-      };
+            const foobar = () => {
+              return (0, _foo.foo)() + exports.bar();
+            };
 
-      exports.foobar = foobar;
-      Object.defineProperty(exports, \\"__esModule\\", {
-        value: true
-      });"
-    `);
+            exports.foobar = foobar;
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });"
+        `);
     });
 
     test("default-function.js", () => {
@@ -66,23 +66,23 @@ describe("index", () => {
         const output = transform(input).code;
 
         expect(output).toMatchInlineSnapshot(`
-      "\\"use strict\\";
+                  "\\"use strict\\";
 
-      Object.defineProperty(exports, \\"__esModule\\", {
-        value: true
-      });
-      exports.foo = void 0;
+                  Object.defineProperty(exports, \\"__esModule\\", {
+                    value: true
+                  });
+                  exports.foo = void 0;
 
-      exports.default = function () {
-        return \\"default\\";
-      };
+                  exports.default = function () {
+                    return \\"default\\";
+                  };
 
-      const foo = \\"foo\\";
-      exports.foo = foo;
-      Object.defineProperty(exports, \\"__esModule\\", {
-        value: true
-      });"
-    `);
+                  const foo = \\"foo\\";
+                  exports.foo = foo;
+                  Object.defineProperty(exports, \\"__esModule\\", {
+                    value: true
+                  });"
+            `);
     });
 
     test("default-variable.js", () => {
@@ -90,18 +90,18 @@ describe("index", () => {
         const output = transform(input).code;
 
         expect(output).toMatchInlineSnapshot(`
-      "\\"use strict\\";
+                  "\\"use strict\\";
 
-      exports.getString = () => \\"default\\"; // eslint-disable-next-line no-unused-vars
+                  exports.getString = () => \\"default\\"; // eslint-disable-next-line no-unused-vars
 
 
-      exports.useGetString = () => exports.getString();
+                  exports.useGetString = () => exports.getString();
 
-      exports.default = exports.getString;
-      Object.defineProperty(exports, \\"__esModule\\", {
-        value: true
-      });"
-    `);
+                  exports.default = exports.getString;
+                  Object.defineProperty(exports, \\"__esModule\\", {
+                    value: true
+                  });"
+            `);
     });
 
     test("use-default.js", () => {
@@ -109,23 +109,23 @@ describe("index", () => {
         const output = transform(input).code;
 
         expect(output).toMatchInlineSnapshot(`
-      "\\"use strict\\";
+                  "\\"use strict\\";
 
-      Object.defineProperty(exports, \\"__esModule\\", {
-        value: true
-      });
-      exports.useDefault = void 0;
+                  Object.defineProperty(exports, \\"__esModule\\", {
+                    value: true
+                  });
+                  exports.useDefault = void 0;
 
-      var _defaultFunction = _interopRequireDefault(require(\\"./default-function.js\\"));
+                  var _defaultFunction = _interopRequireDefault(require(\\"./default-function.js\\"));
 
-      function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+                  function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-      const useDefault = () => (0, _defaultFunction.default)();
+                  const useDefault = () => (0, _defaultFunction.default)();
 
-      exports.useDefault = useDefault;
-      Object.defineProperty(exports, \\"__esModule\\", {
-        value: true
-      });"
-    `);
+                  exports.useDefault = useDefault;
+                  Object.defineProperty(exports, \\"__esModule\\", {
+                    value: true
+                  });"
+            `);
     });
 });

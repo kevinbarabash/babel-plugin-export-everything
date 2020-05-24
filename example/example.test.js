@@ -15,7 +15,7 @@ describe("example", () => {
     });
 
     test("mocking private variable", () => {
-        mockValue(FooBar, "barMsg", "baz");
+        mockValue(FooBar, "msg", "baz");
 
         expect(FooBar.foobar()).toEqual("foobaz");
     });
@@ -27,7 +27,7 @@ describe("example", () => {
     });
 
     test("mocking private variable in dependency", () => {
-        mockValue(Foo, "fooMsg", "qux");
+        mockValue(Foo, "msg", "qux");
 
         expect(FooBar.foobar()).toEqual("quxbar");
     });
