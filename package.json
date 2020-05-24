@@ -1,0 +1,20 @@
+{
+  "name": "babel-plugin-export-everything",
+  "version": "0.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.9.6",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "@babel/preset-env": "^7.9.6",
+    "jest": "^26.0.1",
+    "jest-mock": "git+https://git@github.com/kevinbarabash/jest-mock.git#57e70db7c66b162fd8ee09855a1f1880be9b3f50",
+    "prettier": "^2.0.5"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "@babel/template": "^7.8.6"
+  }
+}
