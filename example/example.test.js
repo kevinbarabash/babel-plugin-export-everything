@@ -21,7 +21,7 @@ describe("example", () => {
     });
 
     test("mocking private function", () => {
-        jest.spyOn(FooBar, "bar").mockReturnValue("baz")
+        jest.spyOn(FooBar, "bar").mockReturnValue("baz");
 
         expect(FooBar.foobar()).toEqual("foobaz");
     });
@@ -33,7 +33,7 @@ describe("example", () => {
     });
 
     test("mocking function from dependency", () => {
-        jest.spyOn(Foo, "foo").mockReturnValue("qux")
+        jest.spyOn(Foo, "foo").mockReturnValue("qux");
 
         expect(FooBar.foobar()).toEqual("quxbar");
     });
