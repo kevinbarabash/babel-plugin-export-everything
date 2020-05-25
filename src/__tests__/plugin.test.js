@@ -1,322 +1,380 @@
 import {transform} from "@babel/core";
-import fs from "fs";
 
-describe("index", () => {
-    test("foo.js", () => {
-        const input = fs.readFileSync("./example/foo.js");
-        const output = transform(input, {
-            filename: "./example/foo.js",
-        }).code;
+const clean = (code) =>
+    code
+        .replace(`"use strict";`, "")
+        .replace(
+            /Object.defineProperty\(exports, "__esModule", \{\n {2}value: true\n\}\);/g,
+            "",
+        )
+        .trim();
 
-        expect(output).toMatchInlineSnapshot(`
-            "\\"use strict\\";
+describe("plugin", () => {
+    describe("imports", () => {
+        test("named import", () => {
+            const input = `
+                import {foo} from "./foo.js";
+                foo();
+            `;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });
-            exports.foo = void 0;
-            Object.defineProperty(exports, \\"msg\\", {
-              enumerable: true,
-              configurable: true,
-              get: () => \\"foo\\"
-            });
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "var _foo = require(\\"./foo.js\\");
 
-            const foo = () => exports.msg;
-
-            exports.foo = foo;
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });"
-        `);
-    });
-
-    test("foobar.js", () => {
-        const input = fs.readFileSync("./example/foobar.js");
-        const output = transform(input, {
-            filename: "./example/foobar.js",
-        }).code;
-
-        expect(output).toMatchInlineSnapshot(`
-            "\\"use strict\\";
-
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });
-            exports.foobar = void 0;
-
-            var _foo = require(\\"./foo.js\\");
-
-            Object.defineProperty(exports, \\"msg\\", {
-              enumerable: true,
-              configurable: true,
-              get: () => \\"bar\\"
-            });
-
-            exports.bar = () => exports.msg;
-
-            const foobar = () => {
-              return (0, _foo.foo)() + exports.bar();
-            };
-
-            exports.foobar = foobar;
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });"
-        `);
-    });
-
-    test("default-function.js", () => {
-        const input = fs.readFileSync("./example/default-function.js");
-        const output = transform(input, {
-            filename: "./example/default-function.js",
-        }).code;
-
-        expect(output).toMatchInlineSnapshot(`
-                  "\\"use strict\\";
-
-                  Object.defineProperty(exports, \\"__esModule\\", {
-                    value: true
-                  });
-                  exports.foo = void 0;
-
-                  exports.default = function () {
-                    return \\"default\\";
-                  };
-
-                  const foo = \\"foo\\";
-                  exports.foo = foo;
-                  Object.defineProperty(exports, \\"__esModule\\", {
-                    value: true
-                  });"
+                (0, _foo.foo)();"
             `);
-    });
+        });
 
-    test("default-variable.js", () => {
-        const input = fs.readFileSync("./example/default-variable.js");
-        const output = transform(input, {
-            filename: "./example/default-variable.js",
-        }).code;
+        test("default import", () => {
+            const input = `
+                import foo from "./foo.js";
+                foo();
+            `;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-        expect(output).toMatchInlineSnapshot(`
-                  "\\"use strict\\";
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "var _foo = _interopRequireDefault(require(\\"./foo.js\\"));
 
-                  exports.getString = () => \\"default\\"; // eslint-disable-next-line no-unused-vars
+                function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-
-                  exports.useGetString = () => exports.getString();
-
-                  exports.default = exports.getString;
-                  Object.defineProperty(exports, \\"__esModule\\", {
-                    value: true
-                  });"
+                (0, _foo.default)();"
             `);
+        });
+
+        test("namespace import", () => {
+            const input = `
+                import * as Foo from "./foo.js";
+                Foo.foo();
+            `;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "var Foo = _interopRequireWildcard(require(\\"./foo.js\\"));
+
+                function _getRequireWildcardCache() { if (typeof WeakMap !== \\"function\\") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+
+                function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== \\"object\\" && typeof obj !== \\"function\\") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+                Foo.foo();"
+            `);
+        });
+
+        // TODO: fix this, we should be doing the same thing as default imports
+        test.skip("require", () => {
+            const input = `
+                const foo = require("./foo.js");
+                foo();
+            `;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "const foo = require(\\"./foo.js\\");
+
+                exports.foo();"
+            `);
+        });
+
+        // TODO: fix this, we should be doing the same thing as named imports
+        test.skip("require with desctructuring", () => {
+            const input = `
+                const {foo} = require("./foo.js");
+                foo();
+            `;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "const {
+                  foo
+                } = require(\\"./foo.js\\");
+
+                foo();"
+            `);
+        });
     });
 
-    test("use-default.js", () => {
-        const input = fs.readFileSync("./example/use-default-function.js");
-        const output = transform(input, {
-            filename: "./example/use-default-function.js",
-        }).code;
+    describe("variables", () => {
+        test("private variables are exported using defineProperty", () => {
+            const input = `
+                const msg = "hello, world";
+            `;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-        expect(output).toMatchInlineSnapshot(`
-            "\\"use strict\\";
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "const msg = \\"hello, world\\";
+                Object.defineProperty(exports, \\"msg\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => msg
+                });"
+            `);
+        });
 
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });
-            exports.useDefault = void 0;
+        test("defineProperty getter avoids side-effects", () => {
+            const input = `
+                const msg = Math.random();
+            `;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-            var _defaultFunction = _interopRequireDefault(require(\\"./default-function.js\\"));
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "const msg = Math.random();
+                Object.defineProperty(exports, \\"msg\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => msg
+                });"
+            `);
+        });
 
-            function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+        test("named exports are exported using defineProperty", () => {
+            const input = `
+                export const msg = "hello, world";
+                console.log(msg);
+            `;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-            const useDefault = () => (0, _defaultFunction.default)();
-
-            exports.useDefault = useDefault;
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });"
-        `);
-    });
-
-    test("wildcard-import.js", () => {
-        const input = fs.readFileSync("./example/wildcard-import.js");
-        const output = transform(input, {
-            filename: "./example/wildcard-import.js",
-        }).code;
-
-        expect(output).toMatchInlineSnapshot(`
-            "\\"use strict\\";
-
-            var DefaultFunction = _interopRequireWildcard(require(\\"./default-function.js\\"));
-
-            function _getRequireWildcardCache() { if (typeof WeakMap !== \\"function\\") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
-
-            function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== \\"object\\" && typeof obj !== \\"function\\") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
-            console.log(DefaultFunction); // eslint-disable-line no-console
-
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });"
-        `);
-    });
-
-    test("classes.js", () => {
-        const input = fs.readFileSync("./example/classes.js");
-        const output = transform(input, {
-            filename: "./example/classes.js",
-        }).code;
-
-        expect(output).toMatchInlineSnapshot(`
-            "\\"use strict\\";
-
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });
-            exports.Circle = void 0;
-
-            class Point {
-              constructor(x, y) {
-                Object.assign(this, {
-                  x,
-                  y
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "const msg = \\"hello, world\\";
+                Object.defineProperty(exports, \\"msg\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => msg
                 });
-              }
+                console.log(exports.msg);"
+            `);
+        });
 
-              toString() {
-                return \`(\${this.x}, \${this.y})\`;
-              }
+        test("uses of private variables are updated to use exports", () => {
+            const input = `
+                const msg = "hello, world";
+                console.log(msg);
+            `;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-            }
+            expect(clean(output)).toContain("console.log(exports.msg);");
+        });
 
-            Object.defineProperty(exports, \\"Point\\", {
-              enumerable: true,
-              configurable: true,
-              get: () => Point
-            });
+        test("uses of named exports are updated to use exports", () => {
+            const input = `
+                export const msg = "hello, world";
+                console.log(msg);
+            `;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-            class Circle {
-              constructor(x, y, radius) {
-                const center = new exports.Point(x, y);
-                Object.assign(this, {
-                  center,
-                  radius
-                });
-              }
-
-              area() {
-                return Math.PI * this.radius * this.radius;
-              }
-
-              toString() {
-                return \`\${this.center} r\${this.radius}\`;
-              }
-
-            }
-
-            exports.Circle = Circle;
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });"
-        `);
+            expect(clean(output)).toContain("console.log(exports.msg);");
+        });
     });
 
-    test("default-class.js", () => {
-        const input = fs.readFileSync("./example/default-class.js");
-        const output = transform(input, {
-            filename: "./example/default-class.js",
-        }).code;
+    describe("functions", () => {
+        test("exports private arrow functions", () => {
+            const input = `const foo = () => "foo";`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-        expect(output).toMatchInlineSnapshot(`
-            "\\"use strict\\";
+            expect(clean(output)).toMatchInlineSnapshot(
+                `"exports.foo = () => \\"foo\\";"`,
+            );
+        });
 
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });
-            exports.default = void 0;
+        test("name exports of arrow functions", () => {
+            const input = `export const foo = () => "foo";`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-            class Dog {
-              bark() {
-                return \\"woof\\";
-              }
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "exports.foo = void 0;
 
+                const foo = () => \\"foo\\";
+
+                exports.foo = foo;"
+            `);
+        });
+
+        // TODO: change function declarations to be variable declarations
+        test.skip("exports private function declarations", () => {
+            const input = `function foo() { 
+                return "foo";
+            }`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "function foo() {
+                  return \\"foo\\";
+                }"
+            `);
+        });
+
+        // TODO: change function declarations to be variable declarations
+        test.skip("named exports of function declarations", () => {
+            const input = `export function foo() { 
+                return "foo";
             }
+            foo();`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-            exports.default = Dog;
-            Object.defineProperty(exports, \\"default\\", {
-              enumerable: true,
-              configurable: true,
-              get: () => Dog
-            });
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });"
-        `);
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "exports.foo = foo;
+
+                function foo() {
+                  return \\"foo\\";
+                }
+
+                foo();"
+            `);
+            // the last line should be exports.foo();
+        });
+
+        test("name exports of function declarations", () => {
+            const input = `export default function foo() { 
+                return "foo";
+            }
+            foo();`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "exports.default = function foo() {
+                  return \\"foo\\";
+                };
+
+                exports.default();"
+            `);
+        });
     });
 
-    test("react.js", () => {
-        const input = fs.readFileSync("./example/react/page.js");
-        const output = transform(input, {
-            filename: "./example/react/page.js",
-        }).code;
+    describe("classes + jsx", () => {
+        test("private classes are exported using defineProperty", () => {
+            const input = `class Foo extends React.Component {
+            }`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-        expect(output).toMatchInlineSnapshot(`
-            "\\"use strict\\";
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "class Foo extends React.Component {}
 
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });
-            exports.default = void 0;
+                Object.defineProperty(exports, \\"Foo\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => Foo
+                });"
+            `);
+        });
 
-            var React = _interopRequireWildcard(require(\\"react\\"));
-
-            function _getRequireWildcardCache() { if (typeof WeakMap !== \\"function\\") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
-
-            function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== \\"object\\" && typeof obj !== \\"function\\") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
-            class Heading extends React.Component {
-              render() {
-                return /*#__PURE__*/React.createElement(\\"h1\\", null, this.props.children);
-              }
-
+        test("constructing private classes uses exports", () => {
+            const input = `class Foo extends React.Component {
             }
+            new Foo();`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-            Object.defineProperty(exports, \\"Heading\\", {
-              enumerable: true,
-              configurable: true,
-              get: () => Heading
-            });
+            expect(clean(output)).toContain("new exports.Foo();");
+        });
 
-            class Body extends React.Component {
-              render() {
-                return /*#__PURE__*/React.createElement(\\"p\\", null, this.props.children);
-              }
-
+        test("jsx elements of private classes use exports", () => {
+            const input = `class Foo extends React.Component {
             }
+            <Foo />;`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-            Object.defineProperty(exports, \\"Body\\", {
-              enumerable: true,
-              configurable: true,
-              get: () => Body
-            });
+            expect(clean(output)).toContain(
+                "React.createElement(exports.Foo, null);",
+            );
+        });
 
-            class Page extends React.Component {
-              render() {
-                return /*#__PURE__*/React.createElement(\\"div\\", null, /*#__PURE__*/React.createElement(exports.Heading, null, \\"Hello, world\\"), /*#__PURE__*/React.createElement(exports.Body, null, \\"Lorem ipsum dolor sit amet\\"));
-              }
+        // TODO: fix this test
+        test.skip("named exports use defineProperty", () => {
+            const input = `export class Foo extends React.Component {
+            }`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "class Foo extends React.Component {}
+
+                Object.defineProperty(exports, \\"Foo\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => Foo
+                });"
+            `);
+        });
+
+        // TODO: fix this test
+        test.skip("constructing named exports use exports", () => {
+            const input = `export class Foo extends React.Component {
             }
+            new Foo();`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
 
-            exports.default = Page;
-            Object.defineProperty(exports, \\"default\\", {
-              enumerable: true,
-              configurable: true,
-              get: () => Page
-            });
-            Object.defineProperty(exports, \\"__esModule\\", {
-              value: true
-            });"
-        `);
+            expect(clean(output)).toContain("new exports.Foo();");
+        });
+
+        // TODO: fix this test
+        test.skip("jsx elements of named exports use exports", () => {
+            const input = `export class Foo extends React.Component {
+            }
+            <Foo />;`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toContain(
+                "React.createElement(exports.Foo, null);",
+            );
+        });
+
+        test("default exports use defineProperty", () => {
+            const input = `export default class Foo extends React.Component {
+            }`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "exports.default = void 0;
+
+                class Foo extends React.Component {}
+
+                exports.default = Foo;
+                Object.defineProperty(exports, \\"default\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => Foo
+                });"
+            `);
+        });
+
+        test("constructing default exports use exports", () => {
+            const input = `export default class Foo extends React.Component {
+            }
+            new Foo();`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toContain("new exports.Foo();");
+        });
+
+        test("jsx elements of default exports use exports", () => {
+            const input = `export default class Foo extends React.Component {
+            }
+            <Foo />;`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toContain(
+                "React.createElement(exports.Foo, null);",
+            );
+        });
     });
 });

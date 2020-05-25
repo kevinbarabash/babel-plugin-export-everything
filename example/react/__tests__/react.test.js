@@ -4,7 +4,7 @@
 import * as React from "react";
 import {mount} from "enzyme";
 
-import * as Page from "../page.js";
+import * as Page from "../page";
 
 const mockValue = (obj, prop, value) => {
     jest.spyOn(obj, prop, "get").mockReturnValue(value);

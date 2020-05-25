@@ -107,7 +107,11 @@ returns whatever is returned by calls to `require`.
 
 ## TODOs:
 
-- Check that `require`-ing dependencies still works in code under test.
+- create setters for `let` declarations
+- `require`-ing dependencies
+- re-exporting things
+- renaming things in exports, e.g. `export { foo as bar, baz as default }`
+- createReactClass classes
 
 ## Developing
 
