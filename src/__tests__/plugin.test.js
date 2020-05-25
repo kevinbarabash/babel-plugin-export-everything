@@ -4,7 +4,9 @@ import fs from "fs";
 describe("index", () => {
     test("foo.js", () => {
         const input = fs.readFileSync("./example/foo.js");
-        const output = transform(input).code;
+        const output = transform(input, {
+            filename: "./example/foo.js",
+        }).code;
 
         expect(output).toMatchInlineSnapshot(`
             "\\"use strict\\";
@@ -30,7 +32,9 @@ describe("index", () => {
 
     test("foobar.js", () => {
         const input = fs.readFileSync("./example/foobar.js");
-        const output = transform(input).code;
+        const output = transform(input, {
+            filename: "./example/foobar.js",
+        }).code;
 
         expect(output).toMatchInlineSnapshot(`
             "\\"use strict\\";
@@ -63,7 +67,9 @@ describe("index", () => {
 
     test("default-function.js", () => {
         const input = fs.readFileSync("./example/default-function.js");
-        const output = transform(input).code;
+        const output = transform(input, {
+            filename: "./example/default-function.js",
+        }).code;
 
         expect(output).toMatchInlineSnapshot(`
                   "\\"use strict\\";
@@ -87,7 +93,9 @@ describe("index", () => {
 
     test("default-variable.js", () => {
         const input = fs.readFileSync("./example/default-variable.js");
-        const output = transform(input).code;
+        const output = transform(input, {
+            filename: "./example/default-variable.js",
+        }).code;
 
         expect(output).toMatchInlineSnapshot(`
                   "\\"use strict\\";
@@ -106,7 +114,9 @@ describe("index", () => {
 
     test("use-default.js", () => {
         const input = fs.readFileSync("./example/use-default-function.js");
-        const output = transform(input).code;
+        const output = transform(input, {
+            filename: "./example/use-default-function.js",
+        }).code;
 
         expect(output).toMatchInlineSnapshot(`
             "\\"use strict\\";
@@ -131,7 +141,9 @@ describe("index", () => {
 
     test("wildcard-import.js", () => {
         const input = fs.readFileSync("./example/wildcard-import.js");
-        const output = transform(input).code;
+        const output = transform(input, {
+            filename: "./example/wildcard-import.js",
+        }).code;
 
         expect(output).toMatchInlineSnapshot(`
             "\\"use strict\\";
@@ -152,7 +164,9 @@ describe("index", () => {
 
     test("classes.js", () => {
         const input = fs.readFileSync("./example/classes.js");
-        const output = transform(input).code;
+        const output = transform(input, {
+            filename: "./example/classes.js",
+        }).code;
 
         expect(output).toMatchInlineSnapshot(`
             "\\"use strict\\";
@@ -210,7 +224,9 @@ describe("index", () => {
 
     test("default-class.js", () => {
         const input = fs.readFileSync("./example/default-class.js");
-        const output = transform(input).code;
+        const output = transform(input, {
+            filename: "./example/default-class.js",
+        }).code;
 
         expect(output).toMatchInlineSnapshot(`
             "\\"use strict\\";
@@ -232,6 +248,71 @@ describe("index", () => {
               enumerable: true,
               configurable: true,
               get: () => Dog
+            });
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });"
+        `);
+    });
+
+    test("react.js", () => {
+        const input = fs.readFileSync("./example/react/page.js");
+        const output = transform(input, {
+            filename: "./example/react/page.js",
+        }).code;
+
+        expect(output).toMatchInlineSnapshot(`
+            "\\"use strict\\";
+
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });
+            exports.default = void 0;
+
+            var React = _interopRequireWildcard(require(\\"react\\"));
+
+            function _getRequireWildcardCache() { if (typeof WeakMap !== \\"function\\") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+
+            function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== \\"object\\" && typeof obj !== \\"function\\") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+            class Heading extends React.Component {
+              render() {
+                return /*#__PURE__*/React.createElement(\\"h1\\", null, this.props.children);
+              }
+
+            }
+
+            Object.defineProperty(exports, \\"Heading\\", {
+              enumerable: true,
+              configurable: true,
+              get: () => Heading
+            });
+
+            class Body extends React.Component {
+              render() {
+                return /*#__PURE__*/React.createElement(\\"p\\", null, this.props.children);
+              }
+
+            }
+
+            Object.defineProperty(exports, \\"Body\\", {
+              enumerable: true,
+              configurable: true,
+              get: () => Body
+            });
+
+            class Page extends React.Component {
+              render() {
+                return /*#__PURE__*/React.createElement(\\"div\\", null, /*#__PURE__*/React.createElement(exports.Heading, null, \\"Hello, world\\"), /*#__PURE__*/React.createElement(exports.Body, null, \\"Lorem ipsum dolor sit amet\\"));
+              }
+
+            }
+
+            exports.default = Page;
+            Object.defineProperty(exports, \\"default\\", {
+              enumerable: true,
+              configurable: true,
+              get: () => Page
             });
             Object.defineProperty(exports, \\"__esModule\\", {
               value: true

@@ -107,9 +107,6 @@ returns whatever is returned by calls to `require`.
 
 ## TODOs:
 
-- I still need to test class exports as well as local class variables.
-  Ideally, we'd want to ensure that we can mock any privately defined
-  React components within a module.
 - Check that `require`-ing dependencies still works in code under test.
 
 ## Developing
