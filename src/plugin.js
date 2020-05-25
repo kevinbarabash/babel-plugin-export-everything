@@ -146,25 +146,19 @@ module.exports = ({types: t}) => {
                     );
                 }
 
-                // For some reason template becomes undefined within the
-                // for loop.  This is probably because the plugin is running
-                // on the plugin.
-                // TODO: try to reproduce this edge case and fix it.
-                const _template = template;
-
                 if (path.node.specifiers) {
-                    const exports = [];
+                    const exportStatements = [];
                     for (const spec of path.node.specifiers) {
                         if (spec.local.name !== spec.exported.name) {
-                            exports.push(
-                                _template.statement`
+                            exportStatements.push(
+                                template.statement`
                 exports.EXPORTED = exports.LOCAL;
               `({EXPORTED: spec.exported, LOCAL: spec.local}),
                             );
                         }
                     }
-                    if (exports.length > 0) {
-                        path.replaceWith(...exports);
+                    if (exportStatements.length > 0) {
+                        path.replaceWith(...exportStatements);
                     }
                 }
             },
