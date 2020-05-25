@@ -31,6 +31,8 @@ jobs:
             ${{ runner.OS }}-node_modules-
       - name: yarn install
         run: yarn install
+      - name: test
+        run: yarn test
 
   lint:
     runs-on: ubuntu-latest
