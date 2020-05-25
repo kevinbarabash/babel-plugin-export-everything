@@ -161,7 +161,8 @@ describe("index", () => {
               value: true
             });
             exports.Circle = void 0;
-            exports.Point = class Point {
+
+            class Point {
               constructor(x, y) {
                 Object.assign(this, {
                   x,
@@ -173,7 +174,13 @@ describe("index", () => {
                 return \`(\${this.x}, \${this.y})\`;
               }
 
-            };
+            }
+
+            Object.defineProperty(exports, \\"Point\\", {
+              enumerable: true,
+              configurable: true,
+              get: () => Point
+            });
 
             class Circle {
               constructor(x, y, radius) {
@@ -195,6 +202,37 @@ describe("index", () => {
             }
 
             exports.Circle = Circle;
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });"
+        `);
+    });
+
+    test("default-class.js", () => {
+        const input = fs.readFileSync("./example/default-class.js");
+        const output = transform(input).code;
+
+        expect(output).toMatchInlineSnapshot(`
+            "\\"use strict\\";
+
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });
+            exports.default = void 0;
+
+            class Dog {
+              bark() {
+                return \\"woof\\";
+              }
+
+            }
+
+            exports.default = Dog;
+            Object.defineProperty(exports, \\"default\\", {
+              enumerable: true,
+              configurable: true,
+              get: () => Dog
+            });
             Object.defineProperty(exports, \\"__esModule\\", {
               value: true
             });"

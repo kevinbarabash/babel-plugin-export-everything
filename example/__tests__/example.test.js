@@ -83,6 +83,21 @@ describe("example", () => {
         expect(circle.toString()).toEqual("point r3");
     });
 
+    test("mocking a private class completely", () => {
+        class MyPoint {
+            constructor(u, v) {
+                Object.assign(this, {u, v});
+            }
+            toString() {
+                return `Point @ ${this.u}, ${this.v}`;
+            }
+        }
+        mockValue(Classes, "Point", MyPoint);
+        const circle = new Classes.Circle(5, 10, 3);
+
+        expect(circle.toString()).toEqual("Point @ 5, 10 r3");
+    });
+
     test("mocking method on default class", () => {
         const dog = UseDefaultClass.createDog();
         expect(dog.bark()).toEqual("woof");
@@ -92,6 +107,19 @@ describe("example", () => {
         );
 
         expect(dog.bark()).toEqual("meow");
+    });
+
+    test("mocking a default class completely", () => {
+        class Wolf {
+            bark() {
+                return "howl";
+            }
+        }
+        mockValue(DefaultClass, "default", Wolf);
+
+        const dog = UseDefaultClass.createDog();
+
+        expect(dog.bark()).toEqual("howl");
     });
 
     test("mocking is reset", () => {

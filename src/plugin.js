@@ -123,26 +123,24 @@ module.exports = ({types: t}) => {
                             }
                         }
 
-                        // This will allow us to override methods on the private
-                        // classes, but we may want to go a step further and use
-                        // Object.defineProperty(exports, "classname", {...}) so
-                        // that we can override the class completely if need be.
-                        path.replaceWith(
-                            t.expressionStatement(
-                                t.assignmentExpression(
-                                    "=",
-                                    t.memberExpression(
-                                        t.identifier("exports"),
-                                        decl.id,
-                                    ),
-                                    t.classExpression(
-                                        decl.id,
-                                        decl.superClass,
-                                        decl.body,
-                                        decl.decorators,
-                                    ),
-                                ),
-                            ),
+                        // We keep the declaration and instead insert a call
+                        // to Object.defineProperty() after it.  The getter
+                        // returns the class was declared.  We define a property
+                        // so that we can override the class with completely new
+                        // class.
+                        // TODO: we probably want to always keep the declaration
+                        // to avoid issues where decl.init was a function call.
+                        path.insertAfter(
+                            template.statement`
+                        Object.defineProperty(exports, "NAME", {
+                            enumerable: true,
+                            configurable: true,
+                            get: () => INIT
+                        })
+                        `({
+                                NAME: decl.id.name,
+                                INIT: decl.id,
+                            }),
                         );
                     }
                 },
@@ -175,22 +173,16 @@ module.exports = ({types: t}) => {
                 }
                 if (t.isClassDeclaration(path.node.declaration)) {
                     const classDecl = path.node.declaration;
-                    path.replaceWith(
-                        t.expressionStatement(
-                            t.assignmentExpression(
-                                "=",
-                                t.memberExpression(
-                                    t.identifier("exports"),
-                                    t.identifier("default"),
-                                ),
-                                t.classExpression(
-                                    classDecl.id,
-                                    classDecl.superClass,
-                                    classDecl.body,
-                                    classDecl.decorators,
-                                ),
-                            ),
-                        ),
+                    path.insertAfter(
+                        template.statement`
+                    Object.defineProperty(exports, "default", {
+                        enumerable: true,
+                        configurable: true,
+                        get: () => INIT
+                    })
+                    `({
+                            INIT: classDecl.id,
+                        }),
                     );
                 }
             },
