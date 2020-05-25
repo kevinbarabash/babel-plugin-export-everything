@@ -105,8 +105,6 @@ describe("plugin", () => {
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
-            // TODO: keep const msg = "hello, world" to handle cases
-            // where accessing the getter would re-evaluate a function
             expect(clean(output)).toMatchInlineSnapshot(`
                 "const msg = \\"hello, world\\";
                 Object.defineProperty(exports, \\"msg\\", {
@@ -202,7 +200,7 @@ describe("plugin", () => {
         });
 
         // TODO: change function declarations to be variable declarations
-        test("exports private function declarations", () => {
+        test.skip("exports private function declarations", () => {
             const input = `function foo() { 
                 return "foo";
             }`;
@@ -217,7 +215,7 @@ describe("plugin", () => {
         });
 
         // TODO: change function declarations to be variable declarations
-        test("named exports of function declarations", () => {
+        test.skip("named exports of function declarations", () => {
             const input = `export function foo() { 
                 return "foo";
             }
