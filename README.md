@@ -111,3 +111,12 @@ returns whatever is returned by calls to `require`.
   Ideally, we'd want to ensure that we can mock any privately defined
   React components within a module.
 - Check that `require`-ing dependencies still works in code under test.
+
+## Developing
+
+jest caches compiled files so often times you'll need to clear the cache
+before your changes will show up.  This can be done by running:
+
+```
+yarn test --clearCache
+```

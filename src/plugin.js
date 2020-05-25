@@ -98,6 +98,53 @@ module.exports = ({types: t}) => {
                     }
                 },
             },
+            ClassDeclaration: {
+                exit(path, state) {
+                    if (state.isTestFile) {
+                        return;
+                    }
+
+                    if (path.parent.type === "Program") {
+                        const decl = path.node;
+
+                        const binding = path.scope.bindings[decl.id.name];
+                        if (binding) {
+                            for (const refPath of binding.referencePaths) {
+                                if (t.isExportSpecifier(refPath.parent)) {
+                                    continue;
+                                }
+                                refPath.replaceWith(
+                                    t.memberExpression(
+                                        t.identifier("exports"),
+                                        decl.id,
+                                    ),
+                                    decl.init,
+                                );
+                            }
+                        }
+
+                        // We keep the declaration and instead insert a call
+                        // to Object.defineProperty() after it.  The getter
+                        // returns the class was declared.  We define a property
+                        // so that we can override the class with completely new
+                        // class.
+                        // TODO: we probably want to always keep the declaration
+                        // to avoid issues where decl.init was a function call.
+                        path.insertAfter(
+                            template.statement`
+                        Object.defineProperty(exports, "NAME", {
+                            enumerable: true,
+                            configurable: true,
+                            get: () => INIT
+                        })
+                        `({
+                                NAME: decl.id.name,
+                                INIT: decl.id,
+                            }),
+                        );
+                    }
+                },
+            },
             ExportDefaultDeclaration(path, state) {
                 if (state.isTestFile) {
                     return;
@@ -122,6 +169,20 @@ module.exports = ({types: t}) => {
                                 ),
                             ),
                         ),
+                    );
+                }
+                if (t.isClassDeclaration(path.node.declaration)) {
+                    const classDecl = path.node.declaration;
+                    path.insertAfter(
+                        template.statement`
+                    Object.defineProperty(exports, "default", {
+                        enumerable: true,
+                        configurable: true,
+                        get: () => INIT
+                    })
+                    `({
+                            INIT: classDecl.id,
+                        }),
                     );
                 }
             },
