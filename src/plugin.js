@@ -98,6 +98,55 @@ module.exports = ({types: t}) => {
                     }
                 },
             },
+            ClassDeclaration: {
+                exit(path, state) {
+                    if (state.isTestFile) {
+                        return;
+                    }
+
+                    if (path.parent.type === "Program") {
+                        const decl = path.node;
+
+                        const binding = path.scope.bindings[decl.id.name];
+                        if (binding) {
+                            for (const refPath of binding.referencePaths) {
+                                if (t.isExportSpecifier(refPath.parent)) {
+                                    continue;
+                                }
+                                refPath.replaceWith(
+                                    t.memberExpression(
+                                        t.identifier("exports"),
+                                        decl.id,
+                                    ),
+                                    decl.init,
+                                );
+                            }
+                        }
+
+                        // This will allow us to override methods on the private
+                        // classes, but we may want to go a step further and use
+                        // Object.defineProperty(exports, "classname", {...}) so
+                        // that we can override the class completely if need be.
+                        path.replaceWith(
+                            t.expressionStatement(
+                                t.assignmentExpression(
+                                    "=",
+                                    t.memberExpression(
+                                        t.identifier("exports"),
+                                        decl.id,
+                                    ),
+                                    t.classExpression(
+                                        decl.id,
+                                        decl.superClass,
+                                        decl.body,
+                                        decl.decorators,
+                                    ),
+                                ),
+                            ),
+                        );
+                    }
+                },
+            },
             ExportDefaultDeclaration(path, state) {
                 if (state.isTestFile) {
                     return;
@@ -119,6 +168,26 @@ module.exports = ({types: t}) => {
                                     funcDecl.body,
                                     funcDecl.generator,
                                     funcDecl.async,
+                                ),
+                            ),
+                        ),
+                    );
+                }
+                if (t.isClassDeclaration(path.node.declaration)) {
+                    const classDecl = path.node.declaration;
+                    path.replaceWith(
+                        t.expressionStatement(
+                            t.assignmentExpression(
+                                "=",
+                                t.memberExpression(
+                                    t.identifier("exports"),
+                                    t.identifier("default"),
+                                ),
+                                t.classExpression(
+                                    classDecl.id,
+                                    classDecl.superClass,
+                                    classDecl.body,
+                                    classDecl.decorators,
                                 ),
                             ),
                         ),

@@ -105,28 +105,28 @@ describe("index", () => {
     });
 
     test("use-default.js", () => {
-        const input = fs.readFileSync("./example/use-default.js");
+        const input = fs.readFileSync("./example/use-default-function.js");
         const output = transform(input).code;
 
         expect(output).toMatchInlineSnapshot(`
-                  "\\"use strict\\";
+            "\\"use strict\\";
 
-                  Object.defineProperty(exports, \\"__esModule\\", {
-                    value: true
-                  });
-                  exports.useDefault = void 0;
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });
+            exports.useDefault = void 0;
 
-                  var _defaultFunction = _interopRequireDefault(require(\\"./default-function.js\\"));
+            var _defaultFunction = _interopRequireDefault(require(\\"./default-function.js\\"));
 
-                  function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+            function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-                  const useDefault = () => (0, _defaultFunction.default)();
+            const useDefault = () => (0, _defaultFunction.default)();
 
-                  exports.useDefault = useDefault;
-                  Object.defineProperty(exports, \\"__esModule\\", {
-                    value: true
-                  });"
-            `);
+            exports.useDefault = useDefault;
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });"
+        `);
     });
 
     test("wildcard-import.js", () => {
@@ -144,6 +144,57 @@ describe("index", () => {
 
             console.log(DefaultFunction); // eslint-disable-line no-console
 
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });"
+        `);
+    });
+
+    test("classes.js", () => {
+        const input = fs.readFileSync("./example/classes.js");
+        const output = transform(input).code;
+
+        expect(output).toMatchInlineSnapshot(`
+            "\\"use strict\\";
+
+            Object.defineProperty(exports, \\"__esModule\\", {
+              value: true
+            });
+            exports.Circle = void 0;
+            exports.Point = class Point {
+              constructor(x, y) {
+                Object.assign(this, {
+                  x,
+                  y
+                });
+              }
+
+              toString() {
+                return \`(\${this.x}, \${this.y})\`;
+              }
+
+            };
+
+            class Circle {
+              constructor(x, y, radius) {
+                const center = new exports.Point(x, y);
+                Object.assign(this, {
+                  center,
+                  radius
+                });
+              }
+
+              area() {
+                return Math.PI * this.radius * this.radius;
+              }
+
+              toString() {
+                return \`\${this.center} r\${this.radius}\`;
+              }
+
+            }
+
+            exports.Circle = Circle;
             Object.defineProperty(exports, \\"__esModule\\", {
               value: true
             });"
