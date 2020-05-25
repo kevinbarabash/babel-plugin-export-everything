@@ -27,6 +27,30 @@ module.exports = ({types: t}) => {
                 if (path.parent.type === "Program") {
                     const decl = path.node.declarations[0];
 
+                    if (state.synthVarDecls.has(decl.id.name)) {
+                        // Don't process any declarations we added ourselves.
+                        return;
+                    } else if (
+                        decl.init.type === "CallExpression" &&
+                        t.isIdentifier(decl.init.callee, {name: "require"})
+                    ) {
+                        return;
+                    } else if (
+                        decl.init.type === "CallExpression" &&
+                        t.isIdentifier(decl.init.callee, {
+                            name: "_interopRequireDefault",
+                        })
+                    ) {
+                        return;
+                    } else if (
+                        decl.init.type === "CallExpression" &&
+                        t.isIdentifier(decl.init.callee, {
+                            name: "_interopRequireWildcard",
+                        })
+                    ) {
+                        return;
+                    }
+
                     const binding = path.scope.bindings[decl.id.name];
                     if (binding) {
                         for (const refPath of binding.referencePaths) {
@@ -48,28 +72,6 @@ module.exports = ({types: t}) => {
                                 exports.NAME = INIT;
                             `({NAME: decl.id, INIT: decl.init}),
                         );
-                    } else if (
-                        decl.init.type === "CallExpression" &&
-                        t.isIdentifier(decl.init.callee, {name: "require"})
-                    ) {
-                        return;
-                    } else if (
-                        decl.init.type === "CallExpression" &&
-                        t.isIdentifier(decl.init.callee, {
-                            name: "_interopRequireDefault",
-                        })
-                    ) {
-                        return;
-                    } else if (
-                        decl.init.type === "CallExpression" &&
-                        t.isIdentifier(decl.init.callee, {
-                            name: "_interopRequireWildcard",
-                        })
-                    ) {
-                        return;
-                    } else if (state.synthVarDecls.has(decl.id.name)) {
-                        // Don't process any declarations we added ourselves.
-                        return;
                     } else {
                         path.insertAfter(
                             template.statement`
@@ -132,7 +134,57 @@ module.exports = ({types: t}) => {
                 }
             },
             FunctionDeclaration(path) {
-                // TODO: implement this
+                if (path.parent.type === "Program") {
+                    const decl = path.node;
+
+                    if (decl.id.name === "_interopRequireWildcard") {
+                        return;
+                    }
+                    if (decl.id.name === "_getRequireWildcardCache") {
+                        return;
+                    }
+                    if (decl.id.name === "_interopRequireDefault") {
+                        return;
+                    }
+
+                    // Apprent function declarations have their own scope
+                    // so we need to grab the Program node's scope instead.
+                    const binding =
+                        path.parentPath.scope.bindings[decl.id.name];
+                    if (binding) {
+                        for (const refPath of binding.referencePaths) {
+                            if (t.isExportSpecifier(refPath.parent)) {
+                                continue;
+                            }
+                            if (t.isIdentifier(refPath.node)) {
+                                refPath.replaceWith(
+                                    t.memberExpression(
+                                        t.identifier("exports"),
+                                        decl.id,
+                                    ),
+                                );
+                            }
+                        }
+                    }
+
+                    // We keep the declaration and instead insert a call
+                    // to Object.defineProperty() after it.  The getter
+                    // returns the class was declared.  We define a property
+                    // so that we can override the class with completely new
+                    // class.
+                    path.insertAfter(
+                        template.statement`
+                            Object.defineProperty(exports, "NAME", {
+                                enumerable: true,
+                                configurable: true,
+                                get: () => INIT
+                            })
+                        `({
+                            NAME: decl.id.name,
+                            INIT: decl.id,
+                        }),
+                    );
+                }
             },
             ExportDefaultDeclaration(path) {
                 // TODO: handle export default class as well
@@ -263,37 +315,105 @@ module.exports = ({types: t}) => {
                 }
 
                 // TODO: figure why adding this clobbers things
-                // if (t.isClassDeclaration(declaration)) {
-                //     const classDecl = declaration;
-                //     const binding = path.scope.bindings[classDecl.id.name];
-                //     if (binding) {
-                //         for (const refPath of binding.referencePaths) {
-                //             refPath.replaceWith(
-                //                 t.memberExpression(
-                //                     t.identifier("exports"),
-                //                     classDecl.id,
-                //                 ),
-                //             );
-                //         }
-                //     }
-                // }
+                if (t.isClassDeclaration(declaration)) {
+                    const decl = declaration;
+                    const binding = path.scope.bindings[decl.id.name];
+                    if (binding) {
+                        for (const refPath of binding.referencePaths) {
+                            if (t.isIdentifier(refPath.node)) {
+                                refPath.replaceWith(
+                                    t.memberExpression(
+                                        t.identifier("exports"),
+                                        decl.id,
+                                    ),
+                                );
+                            }
+                            if (t.isJSXIdentifier(refPath.node)) {
+                                refPath.replaceWith(
+                                    t.jsxMemberExpression(
+                                        t.jsxIdentifier("exports"),
+                                        t.jsxIdentifier(decl.id.name),
+                                    ),
+                                );
+                            }
+                        }
+                    }
+
+                    const newDecl = template.statement`
+                        const NAME = INIT;
+                    `({
+                        NAME: decl.id.name,
+                        INIT: t.classExpression(
+                            decl.id,
+                            decl.superClass,
+                            decl.body,
+                            decl.decorators,
+                        ),
+                    });
+                    const newExports = template.statement`
+                        Object.defineProperty(exports, "NAME", {
+                            enumerable: true,
+                            configurable: true,
+                            get: () => INIT
+                        })
+                    `({
+                        NAME: decl.id.name,
+                        INIT: decl.id,
+                    });
+
+                    path.replaceWithMultiple([newDecl, newExports]);
+
+                    // Record that we generate a variable declaration with
+                    // the given name.
+                    state.synthVarDecls.add(decl.id.name);
+                }
 
                 // TODO: figure why adding this clobbers things in the
                 // `named exports of function declarations` test.
-                // if (t.isFunctionDeclaration(declaration)) {
-                //     const funcDecl = declaration;
-                //     const binding = path.scope.bindings[funcDecl.id.name];
-                //     if (binding) {
-                //         for (const refPath of binding.referencePaths) {
-                //             refPath.replaceWith(
-                //                 t.memberExpression(
-                //                     t.identifier("exports"),
-                //                     funcDecl.id,
-                //                 ),
-                //             );
-                //         }
-                //     }
-                // }
+                if (t.isFunctionDeclaration(declaration)) {
+                    const decl = declaration;
+                    const binding =
+                        path.parentPath.scope.bindings[decl.id.name];
+                    if (binding) {
+                        for (const refPath of binding.referencePaths) {
+                            refPath.replaceWith(
+                                t.memberExpression(
+                                    t.identifier("exports"),
+                                    decl.id,
+                                ),
+                            );
+                        }
+                    }
+
+                    const newDecl = template.statement`
+                        const NAME = INIT;
+                    `({
+                        NAME: decl.id.name,
+                        INIT: t.functionExpression(
+                            decl.id,
+                            decl.params,
+                            decl.body,
+                            decl.generator,
+                            decl.async,
+                        ),
+                    });
+                    const newExports = template.statement`
+                        Object.defineProperty(exports, "NAME", {
+                            enumerable: true,
+                            configurable: true,
+                            get: () => INIT
+                        })
+                    `({
+                        NAME: decl.id.name,
+                        INIT: decl.id,
+                    });
+
+                    path.replaceWithMultiple([newDecl, newExports]);
+
+                    // Record that we generate a variable declaration with
+                    // the given name.
+                    state.synthVarDecls.add(decl.id.name);
+                }
 
                 if (specifiers) {
                     const exportStatements = [];

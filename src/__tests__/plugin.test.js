@@ -62,7 +62,7 @@ describe("plugin", () => {
             `);
         });
 
-        // TODO: fix this, we should be doing the same thing as default imports
+        // TODO: fix this test
         test.skip("require", () => {
             const input = `
                 const foo = require("./foo.js");
@@ -72,14 +72,13 @@ describe("plugin", () => {
                 .code;
 
             expect(clean(output)).toMatchInlineSnapshot(`
-                "const foo = require(\\"./foo.js\\");
+                "const {default: foo} = require(\\"./foo.js\\");
 
-                exports.foo();"
+                foo();"
             `);
         });
 
-        // TODO: fix this, we should be doing the same thing as named imports
-        test.skip("require with desctructuring", () => {
+        test("require with desctructuring", () => {
             const input = `
                 const {foo} = require("./foo.js");
                 foo();
@@ -200,7 +199,7 @@ describe("plugin", () => {
         });
 
         // TODO: change function declarations to be variable declarations
-        test.skip("exports private function declarations", () => {
+        test("exports private function declarations", () => {
             const input = `function foo() { 
                 return "foo";
             }`;
@@ -210,12 +209,39 @@ describe("plugin", () => {
             expect(clean(output)).toMatchInlineSnapshot(`
                 "function foo() {
                   return \\"foo\\";
-                }"
+                }
+
+                Object.defineProperty(exports, \\"foo\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => foo
+                });"
             `);
         });
 
-        // TODO: change function declarations to be variable declarations
-        test.skip("named exports of function declarations", () => {
+        test("calls to private functions use exports", () => {
+            const input = `function foo() { 
+                return "foo";
+            }
+            foo();`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "function foo() {
+                  return \\"foo\\";
+                }
+
+                Object.defineProperty(exports, \\"foo\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => foo
+                });
+                exports.foo();"
+            `);
+        });
+
+        test("named exports of function declarations", () => {
             const input = `export function foo() { 
                 return "foo";
             }
@@ -224,13 +250,16 @@ describe("plugin", () => {
                 .code;
 
             expect(clean(output)).toMatchInlineSnapshot(`
-                "exports.foo = foo;
-
-                function foo() {
+                "const foo = function foo() {
                   return \\"foo\\";
-                }
+                };
 
-                foo();"
+                Object.defineProperty(exports, \\"foo\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => foo
+                });
+                exports.foo();"
             `);
             // the last line should be exports.foo();
         });
@@ -293,16 +322,14 @@ describe("plugin", () => {
             );
         });
 
-        // TODO: fix this test
-        test.skip("named exports use defineProperty", () => {
+        test("named exports use defineProperty", () => {
             const input = `export class Foo extends React.Component {
             }`;
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
             expect(clean(output)).toMatchInlineSnapshot(`
-                "class Foo extends React.Component {}
-
+                "const Foo = class Foo extends React.Component {};
                 Object.defineProperty(exports, \\"Foo\\", {
                   enumerable: true,
                   configurable: true,
@@ -311,8 +338,7 @@ describe("plugin", () => {
             `);
         });
 
-        // TODO: fix this test
-        test.skip("constructing named exports use exports", () => {
+        test("constructing named exports use exports", () => {
             const input = `export class Foo extends React.Component {
             }
             new Foo();`;
@@ -322,8 +348,7 @@ describe("plugin", () => {
             expect(clean(output)).toContain("new exports.Foo();");
         });
 
-        // TODO: fix this test
-        test.skip("jsx elements of named exports use exports", () => {
+        test("jsx elements of named exports use exports", () => {
             const input = `export class Foo extends React.Component {
             }
             <Foo />;`;
