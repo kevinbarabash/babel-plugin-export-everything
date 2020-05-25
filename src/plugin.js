@@ -77,6 +77,13 @@ module.exports = ({types: t}) => {
                             })
                         ) {
                             return;
+                        } else if (
+                            decl.init.type === "CallExpression" &&
+                            t.isIdentifier(decl.init.callee, {
+                                name: "_interopRequireWildcard",
+                            })
+                        ) {
+                            return;
                         } else {
                             path.replaceWith(
                                 template.statement`

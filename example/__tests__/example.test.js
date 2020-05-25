@@ -1,8 +1,7 @@
 import * as FooBar from "../foobar.js";
 import * as Foo from "../foo.js";
-// TODO: allow import to be used when mocking default values
-const DefaultFunction = require("../default-function.js");
-const DefaultVariable = require("../default-variable.js");
+import * as DefaultFunction from "../default-function";
+import * as DefaultVariable from "../default-variable.js";
 import * as UseDefault from "../use-default.js";
 
 const mockValue = (obj, prop, value) => {
