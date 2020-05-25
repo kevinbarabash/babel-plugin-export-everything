@@ -105,10 +105,9 @@ In order have consistent operation regardless of whether the helper is
 being used or not, we need to set `__esModule = true` so that we always
 returns whatever is returned by calls to `require`.
 
-## Current Limitations:
+## TODOs:
 
-- In order to mock default exports you have to use `require` to import
-  the module you want to mock in your tests.
 - I still need to test class exports as well as local class variables.
   Ideally, we'd want to ensure that we can mock any privately defined
   React components within a module.
+- Check that `require`-ing dependencies still works in code under test.
