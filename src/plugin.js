@@ -54,7 +54,6 @@ module.exports = ({types: t}) => {
                                         t.identifier("exports"),
                                         decl.id,
                                     ),
-                                    decl.init,
                                 );
                             }
                         }
@@ -113,13 +112,22 @@ module.exports = ({types: t}) => {
                                 if (t.isExportSpecifier(refPath.parent)) {
                                     continue;
                                 }
-                                refPath.replaceWith(
-                                    t.memberExpression(
-                                        t.identifier("exports"),
-                                        decl.id,
-                                    ),
-                                    decl.init,
-                                );
+                                if (t.isIdentifier(refPath.node)) {
+                                    refPath.replaceWith(
+                                        t.memberExpression(
+                                            t.identifier("exports"),
+                                            decl.id,
+                                        ),
+                                    );
+                                }
+                                if (t.isJSXIdentifier(refPath.node)) {
+                                    refPath.replaceWith(
+                                        t.jsxMemberExpression(
+                                            t.jsxIdentifier("exports"),
+                                            t.jsxIdentifier(decl.id.name),
+                                        ),
+                                    );
+                                }
                             }
                         }
 
@@ -143,6 +151,14 @@ module.exports = ({types: t}) => {
                             }),
                         );
                     }
+                },
+            },
+            FunctionDeclaration: {
+                exit(path, state) {
+                    if (state.isTestFile) {
+                        return;
+                    }
+                    // TODO: implement this
                 },
             },
             ExportDefaultDeclaration(path, state) {
@@ -202,7 +218,6 @@ module.exports = ({types: t}) => {
                                     t.identifier("exports"),
                                     decl.id,
                                 ),
-                                decl.init,
                             );
                         }
                     }
