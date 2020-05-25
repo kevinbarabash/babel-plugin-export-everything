@@ -62,5 +62,7 @@ jobs:
             ${{ runner.OS }}-node_modules-
       - name: yarn install
         run: yarn install
+      - name: flow
+        run: yarn flow
       - name: lint
         run: yarn lint
