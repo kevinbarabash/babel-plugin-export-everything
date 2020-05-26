@@ -75,13 +75,29 @@ export const foobar = () => `${foo()}bar`;
 
 output.js
 ```js
+const msg = "foo",
 Object.defineProperty(exports, "msg", {
     enumerable: true,
     configurable: true,
-    get: () => "foo",
+    get: () => msg,
 });
-exports.foo = () => exports.msg;
-exports.foobar = () => `${exports.foo()}bar`;
+
+let foo = () => exports.msg;
+Object.defineProperty(exports, "foo", {
+    enumerable: true,
+    configurable: true,
+    get: () => foo,
+    set: (newValue) => foo = newValue,
+});
+
+let foobar = () => `${exports.foo()}bar`;
+Object.defineProperty(exports, "foobar", {
+    enumerable: true,
+    configurable: true,
+    get: () => foobar,
+    set: (newValue) => foobar = newValue,
+});
+
 Object.defineProperty(exports, "__esModule", {
     value: true,
 });
