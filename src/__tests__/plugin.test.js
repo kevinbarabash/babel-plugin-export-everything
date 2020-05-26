@@ -139,12 +139,14 @@ describe("plugin", () => {
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
+            // TODO: maintain const-ness for variable declarations
             expect(clean(output)).toMatchInlineSnapshot(`
-                "const msg = \\"hello, world\\";
+                "let msg = \\"hello, world\\";
                 Object.defineProperty(exports, \\"msg\\", {
                   enumerable: true,
                   configurable: true,
-                  get: () => msg
+                  get: () => msg,
+                  set: newValue => msg = newValue
                 });
                 console.log(exports.msg);"
             `);
@@ -190,11 +192,14 @@ describe("plugin", () => {
                 .code;
 
             expect(clean(output)).toMatchInlineSnapshot(`
-                "exports.foo = void 0;
+                "let foo = () => \\"foo\\";
 
-                const foo = () => \\"foo\\";
-
-                exports.foo = foo;"
+                Object.defineProperty(exports, \\"foo\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => foo,
+                  set: newValue => foo = newValue
+                });"
             `);
         });
 
@@ -250,14 +255,15 @@ describe("plugin", () => {
                 .code;
 
             expect(clean(output)).toMatchInlineSnapshot(`
-                "const foo = function foo() {
+                "let foo = function foo() {
                   return \\"foo\\";
                 };
 
                 Object.defineProperty(exports, \\"foo\\", {
                   enumerable: true,
                   configurable: true,
-                  get: () => foo
+                  get: () => foo,
+                  set: newValue => foo = newValue
                 });
                 exports.foo();"
             `);

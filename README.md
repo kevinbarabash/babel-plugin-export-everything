@@ -105,7 +105,13 @@ In order have consistent operation regardless of whether the helper is
 being used or not, we need to set `__esModule = true` so that we always
 returns whatever is returned by calls to `require`.
 
-## TODOs:
+## Warning
+
+In order for coverage to work, please set `coverageProvider: "v8"` in
+your jest configuration.  Without this, some tests will fail because of
+how the traditional code coverage modifies your code to instrument it.
+
+## TODOs
 
 - create setters for `let` declarations
 - `require`-ing dependencies
