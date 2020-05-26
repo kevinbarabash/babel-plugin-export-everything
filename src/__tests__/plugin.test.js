@@ -98,14 +98,12 @@ describe("plugin", () => {
 
     describe("variables", () => {
         test("private variables are exported using defineProperty", () => {
-            const input = `
-                const msg = "hello, world";
-            `;
+            const input = `const msg = "hello, world";`;
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
             expect(clean(output)).toMatchInlineSnapshot(`
-                "const msg = \\"hello, world\\";
+                "let msg = \\"hello, world\\";
                 Object.defineProperty(exports, \\"msg\\", {
                   enumerable: true,
                   configurable: true,
@@ -114,15 +112,30 @@ describe("plugin", () => {
             `);
         });
 
-        test("defineProperty getter avoids side-effects", () => {
-            const input = `
-                const msg = Math.random();
-            `;
+        test("private let variables have getters", () => {
+            const input = `let msg = "hello, world";`;
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
             expect(clean(output)).toMatchInlineSnapshot(`
-                "const msg = Math.random();
+                "let msg = \\"hello, world\\";
+                Object.defineProperty(exports, \\"msg\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => msg,
+                  set: newValue => msg = newValue
+                });"
+            `);
+        });
+
+        test("defineProperty getter avoids side-effects", () => {
+            const input = `const msg = Math.random();`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            // TODO: maintain const-ness for variable declarations
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "let msg = Math.random();
                 Object.defineProperty(exports, \\"msg\\", {
                   enumerable: true,
                   configurable: true,
@@ -139,7 +152,6 @@ describe("plugin", () => {
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
-            // TODO: maintain const-ness for variable declarations
             expect(clean(output)).toMatchInlineSnapshot(`
                 "let msg = \\"hello, world\\";
                 Object.defineProperty(exports, \\"msg\\", {
@@ -149,6 +161,29 @@ describe("plugin", () => {
                   set: newValue => msg = newValue
                 });
                 console.log(exports.msg);"
+            `);
+        });
+
+        test("multiple named exports are exported using defineProperty", () => {
+            const input = `export const foo = "foo", bar = "bar";`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "let foo = \\"foo\\";
+                Object.defineProperty(exports, \\"foo\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => foo,
+                  set: newValue => foo = newValue
+                });
+                let bar = \\"bar\\";
+                Object.defineProperty(exports, \\"bar\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => bar,
+                  set: newValue => bar = newValue
+                });"
             `);
         });
 
@@ -181,9 +216,16 @@ describe("plugin", () => {
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
-            expect(clean(output)).toMatchInlineSnapshot(
-                `"exports.foo = () => \\"foo\\";"`,
-            );
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "let foo = () => \\"foo\\";
+
+                Object.defineProperty(exports, \\"foo\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => foo,
+                  set: newValue => foo = newValue
+                });"
+            `);
         });
 
         test("name exports of arrow functions", () => {
@@ -232,25 +274,13 @@ describe("plugin", () => {
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
-            expect(clean(output)).toMatchInlineSnapshot(`
-                "function foo() {
-                  return \\"foo\\";
-                }
-
-                Object.defineProperty(exports, \\"foo\\", {
-                  enumerable: true,
-                  configurable: true,
-                  get: () => foo
-                });
-                exports.foo();"
-            `);
+            expect(clean(output)).toContain("exports.foo();");
         });
 
         test("named exports of function declarations", () => {
             const input = `export function foo() { 
                 return "foo";
-            }
-            foo();`;
+            }`;
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
@@ -264,13 +294,43 @@ describe("plugin", () => {
                   configurable: true,
                   get: () => foo,
                   set: newValue => foo = newValue
-                });
-                exports.foo();"
+                });"
             `);
-            // the last line should be exports.foo();
         });
 
-        test("name exports of function declarations", () => {
+        test("uses of named function exports are prefixed with exports.", () => {
+            const input = `export function foo() { 
+                return "foo";
+            }
+            foo();`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toContain("exports.foo();");
+        });
+
+        test("default export of function declarations", () => {
+            const input = `export default function foo() { 
+                return "foo";
+            }`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "let foo = function foo() {
+                  return \\"foo\\";
+                };
+
+                Object.defineProperty(exports, \\"foo\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => foo,
+                  set: newValue => foo = newValue
+                });"
+            `);
+        });
+
+        test("uses of default function exports are prefixed with exports.", () => {
             const input = `export default function foo() { 
                 return "foo";
             }
@@ -278,13 +338,7 @@ describe("plugin", () => {
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
-            expect(clean(output)).toMatchInlineSnapshot(`
-                "exports.default = function foo() {
-                  return \\"foo\\";
-                };
-
-                exports.default();"
-            `);
+            expect(clean(output)).toContain("exports.default();");
         });
     });
 
@@ -384,6 +438,15 @@ describe("plugin", () => {
                   get: () => Foo
                 });"
             `);
+        });
+
+        test.skip("default export without id use defineProperty", () => {
+            const input = `export default class extends React.Component {
+            }`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(``);
         });
 
         test("constructing default exports use exports", () => {

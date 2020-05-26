@@ -34,6 +34,6 @@
   "scripts": {
     "flow": "flow",
     "lint": "eslint src example",
-    "test": "jest"
+    "test": "jest --clearCache && jest"
   }
 }

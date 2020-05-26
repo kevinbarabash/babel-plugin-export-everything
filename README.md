@@ -113,7 +113,6 @@ how the traditional code coverage modifies your code to instrument it.
 
 ## TODOs
 
-- create setters for `let` declarations
 - `require`-ing dependencies
 - re-exporting things
 - renaming things in exports, e.g. `export { foo as bar, baz as default }`
