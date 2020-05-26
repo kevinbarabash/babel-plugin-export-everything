@@ -1,8 +1,8 @@
 import * as FooBar from "../foobar";
 import * as Foo from "../foo";
-import * as DefaultFunction from "../default-function";
+import * as Functions from "../functions";
 import * as DefaultVariable from "../default-variable";
-import * as UseDefault from "../use-default-function";
+import * as UseFunctions from "../use-functions";
 
 const mockValue = (obj, prop, value) => {
     jest.spyOn(obj, prop, "get").mockReturnValue(value);
@@ -32,15 +32,15 @@ describe("example", () => {
     });
 
     test("mocking default function", () => {
-        jest.spyOn(DefaultFunction, "default").mockReturnValue("mocked");
+        jest.spyOn(Functions, "default").mockReturnValue("mocked");
 
-        expect(DefaultFunction.default()).toEqual("mocked");
+        expect(Functions.default()).toEqual("mocked");
     });
 
     test("using mocked default function", () => {
-        jest.spyOn(DefaultFunction, "default").mockReturnValue("mocked");
+        jest.spyOn(Functions, "default").mockReturnValue("mocked");
 
-        expect(UseDefault.useDefault()).toEqual("mocked");
+        expect(UseFunctions.useDefault()).toEqual("mocked");
     });
 
     test("mocking default variables", () => {
@@ -51,5 +51,11 @@ describe("example", () => {
 
     test("mocking is reset", () => {
         expect(FooBar.foobar()).toEqual("foobar");
+    });
+
+    test("mocking named export function", () => {
+        jest.spyOn(Functions, "foo").mockReturnValue("mocked");
+
+        expect(Functions.foo()).toEqual("mocked");
     });
 });
