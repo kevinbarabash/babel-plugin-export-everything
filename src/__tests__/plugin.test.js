@@ -440,6 +440,15 @@ describe("plugin", () => {
             `);
         });
 
+        test.skip("default export without id use defineProperty", () => {
+            const input = `export default class extends React.Component {
+            }`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(``);
+        });
+
         test("constructing default exports use exports", () => {
             const input = `export default class Foo extends React.Component {
             }

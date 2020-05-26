@@ -73,7 +73,6 @@ const replaceDecl = (t, path, state, ...decls) => {
     const isConst =
         t.isVariableDeclaration(path.node) && path.node.kind === "const";
     const replacements = decls.map((decl) => {
-        // TODO: check if the variable declarator is let or const
         const varDeclTemplate =
             t.isFunctionDeclaration(decl) || t.isVariableDeclarator(decl)
                 ? "let NAME = INIT"
@@ -218,10 +217,13 @@ module.exports = ({types: t}) => {
                     replaceDecl(t, path, state, decl);
                 }
                 if (t.isClassDeclaration(decl)) {
-                    const binding = path.scope.bindings[decl.id.name];
-                    updateBinding(t, binding, decl.id.name);
+                    // TODO: handle the case where the exported class has no id
+                    if (decl.id) {
+                        const binding = path.scope.bindings[decl.id.name];
+                        updateBinding(t, binding, decl.id.name);
 
-                    path.insertAfter(defineGetter("default", decl.id));
+                        path.insertAfter(defineGetter("default", decl.id));
+                    }
                 }
             },
             ExportNamedDeclaration(path, state) {
