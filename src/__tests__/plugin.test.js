@@ -98,9 +98,22 @@ describe("plugin", () => {
 
     describe("variables", () => {
         test("private variables are exported using defineProperty", () => {
-            const input = `
-                const msg = "hello, world";
-            `;
+            const input = `const msg = "hello, world";`;
+            const output = transform(input, {filename: "./example/fake.js"})
+                .code;
+
+            expect(clean(output)).toMatchInlineSnapshot(`
+                "let msg = \\"hello, world\\";
+                Object.defineProperty(exports, \\"msg\\", {
+                  enumerable: true,
+                  configurable: true,
+                  get: () => msg
+                });"
+            `);
+        });
+
+        test("private let variables have getters", () => {
+            const input = `let msg = "hello, world";`;
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
@@ -116,9 +129,7 @@ describe("plugin", () => {
         });
 
         test("defineProperty getter avoids side-effects", () => {
-            const input = `
-                const msg = Math.random();
-            `;
+            const input = `const msg = Math.random();`;
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 
@@ -128,8 +139,7 @@ describe("plugin", () => {
                 Object.defineProperty(exports, \\"msg\\", {
                   enumerable: true,
                   configurable: true,
-                  get: () => msg,
-                  set: newValue => msg = newValue
+                  get: () => msg
                 });"
             `);
         });
@@ -155,9 +165,7 @@ describe("plugin", () => {
         });
 
         test("multiple named exports are exported using defineProperty", () => {
-            const input = `
-                export const foo = "foo", bar = "bar";
-            `;
+            const input = `export const foo = "foo", bar = "bar";`;
             const output = transform(input, {filename: "./example/fake.js"})
                 .code;
 

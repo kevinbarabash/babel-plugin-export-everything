@@ -70,6 +70,8 @@ const defineGetter = (name, init) => {
 };
 
 const replaceDecl = (t, path, state, ...decls) => {
+    const isConst =
+        t.isVariableDeclaration(path.node) && path.node.kind === "const";
     const replacements = decls.map((decl) => {
         // TODO: check if the variable declarator is let or const
         const varDeclTemplate =
@@ -77,16 +79,21 @@ const replaceDecl = (t, path, state, ...decls) => {
                 ? "let NAME = INIT"
                 : "const NAME = INIT";
 
-        const objDefTemplate =
-            // functions need to be writable for jest.spyOn() to work on them.
-            t.isFunctionDeclaration(decl) || t.isVariableDeclarator(decl)
-                ? `Object.defineProperty(exports, "NAME", {
+        const isArrow = t.isArrowFunctionExpression(decl.init);
+        const isWritable =
+            // Functions need to be writable for jest.spyOn() to work on them.
+            t.isFunctionDeclaration(decl) ||
+            // This includes arrow functions.
+            (t.isVariableDeclarator(decl) && (!isConst || isArrow));
+
+        const objDefTemplate = isWritable
+            ? `Object.defineProperty(exports, "NAME", {
                     enumerable: true,
                     configurable: true,
                     get: () => INIT,
                     set: (newValue) => INIT = newValue,
                 })`
-                : `Object.defineProperty(exports, "NAME", {
+            : `Object.defineProperty(exports, "NAME", {
                     enumerable: true,
                     configurable: true,
                     get: () => INIT,
