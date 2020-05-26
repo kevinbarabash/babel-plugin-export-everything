@@ -69,38 +69,46 @@ const defineGetter = (name, init) => {
     });
 };
 
-const replaceDecl = (t, path, decl) => {
-    // TODO: check if the variable declarator is let or const
-    const varDeclTemplate =
-        t.isFunctionDeclaration(decl) || t.isVariableDeclarator(decl)
-            ? "let NAME = INIT"
-            : "const NAME = INIT";
+const replaceDecl = (t, path, state, ...decls) => {
+    const replacements = decls.map((decl) => {
+        // TODO: check if the variable declarator is let or const
+        const varDeclTemplate =
+            t.isFunctionDeclaration(decl) || t.isVariableDeclarator(decl)
+                ? "let NAME = INIT"
+                : "const NAME = INIT";
 
-    const objDefTemplate =
-        // functions need to be writable for jest.spyOn() to work on them.
-        t.isFunctionDeclaration(decl) || t.isVariableDeclarator(decl)
-            ? `Object.defineProperty(exports, "NAME", {
-            enumerable: true,
-            configurable: true,
-            get: () => INIT,
-            set: (newValue) => INIT = newValue,
-        })`
-            : `Object.defineProperty(exports, "NAME", {
-            enumerable: true,
-            configurable: true,
-            get: () => INIT,
-        })`;
+        const objDefTemplate =
+            // functions need to be writable for jest.spyOn() to work on them.
+            t.isFunctionDeclaration(decl) || t.isVariableDeclarator(decl)
+                ? `Object.defineProperty(exports, "NAME", {
+                    enumerable: true,
+                    configurable: true,
+                    get: () => INIT,
+                    set: (newValue) => INIT = newValue,
+                })`
+                : `Object.defineProperty(exports, "NAME", {
+                    enumerable: true,
+                    configurable: true,
+                    get: () => INIT,
+                })`;
 
-    path.replaceWithMultiple([
-        template.statement(varDeclTemplate)({
-            NAME: decl.id.name,
-            INIT: declToExpr(t, decl),
-        }),
-        template.statement(objDefTemplate)({
-            NAME: decl.id.name,
-            INIT: decl.id,
-        }),
-    ]);
+        // Record that we generate a variable declaration with
+        // the given name.
+        state.synthVarDecls.add(decl.id.name);
+
+        return [
+            template.statement(varDeclTemplate)({
+                NAME: decl.id.name,
+                INIT: declToExpr(t, decl),
+            }),
+            template.statement(objDefTemplate)({
+                NAME: decl.id.name,
+                INIT: decl.id,
+            }),
+        ];
+    });
+
+    path.replaceWithMultiple([].concat(...replacements));
 };
 
 module.exports = ({types: t}) => {
@@ -135,29 +143,17 @@ module.exports = ({types: t}) => {
                         return;
                     } else if (
                         decl.init.type === "CallExpression" &&
-                        t.isIdentifier(decl.init.callee, {name: "require"})
-                    ) {
-                        return;
-                    } else if (
-                        decl.init.type === "CallExpression" &&
                         t.isIdentifier(decl.init.callee) &&
-                        BABEL_HELPERS.includes(decl.init.callee.name)
+                        ["require", ...BABEL_HELPERS].includes(
+                            decl.init.callee.name,
+                        )
                     ) {
                         return;
                     }
 
                     const binding = path.scope.bindings[decl.id.name];
                     updateBinding(t, binding, decl.id.name);
-
-                    if (decl.init.type === "ArrowFunctionExpression") {
-                        path.replaceWith(
-                            template.statement`
-                                exports.NAME = INIT;
-                            `({NAME: decl.id, INIT: decl.init}),
-                        );
-                    } else {
-                        path.insertAfter(defineGetter(decl.id.name, decl.id));
-                    }
+                    replaceDecl(t, path, state, decl);
                 }
             },
             ClassDeclaration(path) {
@@ -198,7 +194,7 @@ module.exports = ({types: t}) => {
                     path.insertAfter(defineGetter(decl.id.name, decl.id));
                 }
             },
-            ExportDefaultDeclaration(path) {
+            ExportDefaultDeclaration(path, state) {
                 const decl = path.node.declaration;
                 if (t.isFunctionDeclaration(decl)) {
                     // Often times functions exported as defaults aren't
@@ -212,19 +208,7 @@ module.exports = ({types: t}) => {
                     // updating all references to that function to `exports.default`.
                     const binding = path.scope.bindings[decl.id.name];
                     updateBinding(t, binding, "default");
-
-                    path.replaceWith(
-                        t.expressionStatement(
-                            t.assignmentExpression(
-                                "=",
-                                t.memberExpression(
-                                    t.identifier("exports"),
-                                    t.identifier("default"),
-                                ),
-                                declToExpr(t, decl),
-                            ),
-                        ),
-                    );
+                    replaceDecl(t, path, state, decl);
                 }
                 if (t.isClassDeclaration(decl)) {
                     const binding = path.scope.bindings[decl.id.name];
@@ -237,36 +221,24 @@ module.exports = ({types: t}) => {
                 const {declaration: decl, specifiers} = path.node;
 
                 if (t.isVariableDeclaration(decl)) {
-                    // Can there be multiple declarations for a named export?
-                    const firstDecl = decl.declarations[0];
-                    const binding = path.scope.bindings[firstDecl.id.name];
-                    updateBinding(t, binding, firstDecl.id.name);
-                    replaceDecl(t, path, firstDecl);
-
-                    // Record that we generate a variable declaration with
-                    // the given name.
-                    state.synthVarDecls.add(firstDecl.id.name);
+                    for (const declarator of decl.declarations) {
+                        const binding = path.scope.bindings[declarator.id.name];
+                        updateBinding(t, binding, declarator.id.name);
+                    }
+                    replaceDecl(t, path, state, ...decl.declarations);
                 }
 
                 if (t.isClassDeclaration(decl)) {
                     const binding = path.scope.bindings[decl.id.name];
                     updateBinding(t, binding, decl.id.name);
-                    replaceDecl(t, path, decl);
-
-                    // Record that we generate a variable declaration with
-                    // the given name.
-                    state.synthVarDecls.add(decl.id.name);
+                    replaceDecl(t, path, state, decl);
                 }
 
                 if (t.isFunctionDeclaration(decl)) {
                     const binding =
                         path.parentPath.scope.bindings[decl.id.name];
                     updateBinding(t, binding, decl.id.name);
-                    replaceDecl(t, path, decl);
-
-                    // Record that we generate a variable declaration with
-                    // the given name.
-                    state.synthVarDecls.add(decl.id.name);
+                    replaceDecl(t, path, state, decl);
                 }
 
                 if (specifiers) {
